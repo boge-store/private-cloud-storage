@@ -1,0 +1,35 @@
+package middleware
+
+import (
+	"myobj/src/core/domain/response"
+	"myobj/src/pkg/models"
+
+	"github.com/gin-gonic/gin"
+)
+
+// PowerVerify 权限验证中间件
+func PowerVerify(power string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userLogin, exist := c.Get("userLogin")
+		if !exist {
+			c.JSON(401, models.NewJsonResponse(401, "用户未登录", nil))
+			c.Abort()
+			return
+		}
+		loginInfo, ok := userLogin.(response.UserLoginResponse)
+		if !ok {
+			c.JSON(500, models.NewJsonResponse(500, "内部错误", nil))
+			c.Abort()
+			return
+		}
+		for _, p := range loginInfo.Power {
+			if p.Characteristic == power {
+				c.Next()
+				return
+			}
+		}
+		c.JSON(403, models.NewJsonResponse(403, "用户无权限", nil))
+		c.Abort()
+		return
+	}
+}

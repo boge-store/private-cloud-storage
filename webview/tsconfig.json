@@ -1,0 +1,55 @@
+{
+  "compilerOptions": {
+    "ignoreDeprecations": "6.0",
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+
+    /* Linting */
+    "strict": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+
+    /* Path alias */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@myobj/shared": ["packages/shared/index.ts"],
+      "@myobj/shared/*": ["packages/shared/*"],
+      "@myobj/http": ["packages/http/index.ts"],
+      "@myobj/http/*": ["packages/http/*"],
+      "@myobj/api": ["packages/api/index.ts"],
+      "@myobj/api/*": ["packages/api/*"],
+      "@myobj/hooks": ["packages/hooks/index.ts"],
+      "@myobj/hooks/*": ["packages/hooks/*"],
+      "@myobj/ui": ["packages/ui/index.ts"],
+      "@myobj/ui/*": ["packages/ui/*"]
+    },
+    "types": ["vite/client"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "packages/**/*.ts",
+    "packages/**/*.vue"
+  ],
+  "exclude": ["node_modules", "dist"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

@@ -1,0 +1,14 @@
+/logs/
+/examples/
+/bin/
+.idea
+.vscode
+mise.toml
+/obj_temp/
+/obj_data/
+config.toml
+*.exe
+.gobuildcache
+/website/
+/src/logs/
+/runtime/

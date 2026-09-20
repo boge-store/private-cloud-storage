@@ -1,0 +1,214 @@
+/**
+ * 文件预览工具函数
+ */
+
+import axios from 'axios'
+import type { FileItem, PreviewType } from '@myobj/shared'
+import { API_BASE_URL, API_ENDPOINTS, cache } from '@myobj/shared'
+import { videoApi } from '@myobj/api'
+const { createVideoPlayPrecheck, getVideoStreamUrl } = videoApi
+
+/**
+ * 检测文件类型
+ */
+export const detectFileType = (file: FileItem): PreviewType => {
+  if (!file.mime_type) {
+    return 'unsupported'
+  }
+
+  const mimeType = file.mime_type.toLowerCase()
+
+  // 图片类型
+  if (mimeType.startsWith('image/')) {
+    return 'image'
+  }
+
+  // 视频类型
+  if (mimeType.startsWith('video/')) {
+    return 'video'
+  }
+
+  // 音频类型
+  if (mimeType.startsWith('audio/')) {
+    return 'audio'
+  }
+
+  // PDF 类型
+  if (mimeType === 'application/pdf') {
+    return 'pdf'
+  }
+
+  // 文本/代码类型
+  if (mimeType.startsWith('text/')) {
+    // 代码文件扩展名
+    const codeExts = [
+      'js',
+      'ts',
+      'jsx',
+      'tsx',
+      'vue',
+      'html',
+      'css',
+      'scss',
+      'less',
+      'java',
+      'py',
+      'cpp',
+      'c',
+      'go',
+      'rs',
+      'php',
+      'rb',
+      'swift',
+      'sql',
+      'sh',
+      'bash',
+      'zsh',
+      'ps1'
+    ]
+
+    // 从文件名获取扩展名
+    const fileName = file.file_name || ''
+    const ext = fileName.split('.').pop()?.toLowerCase() || ''
+
+    if (codeExts.includes(ext)) {
+      return 'code'
+    }
+
+    return 'text'
+  }
+
+  // JSON、XML 等
+  if (mimeType === 'application/json' || mimeType === 'application/xml') {
+    return 'text'
+  }
+
+  return 'unsupported'
+}
+
+/**
+ * 获取文件预览 URL（返回blob URL，带认证）
+ * 对于视频文件，使用 /video/stream 接口（支持 Range 请求，每次最大 2MB）
+ * @param fileId 文件ID
+ * @param fileType 文件类型（可选，用于判断是否为视频）
+ * @returns Promise<string> blob URL 或视频流 URL
+ */
+export const getFilePreviewUrl = async (fileId: string, fileType?: string): Promise<string> => {
+  try {
+    // 如果是视频类型，使用视频流接口（支持 Range 请求）
+    if (fileType === 'video') {
+      const res = await createVideoPlayPrecheck(fileId)
+      if (res.code === 200 && res.data) {
+        // 直接返回视频流 URL，浏览器会自动处理 Range 请求
+        return getVideoStreamUrl(res.data.play_token)
+      } else {
+        throw new Error(res.message || '获取视频播放 Token 失败')
+      }
+    }
+
+    // 其他类型文件使用预览接口
+    const token = cache.local.get('token')
+    const url = `${API_BASE_URL}/download/preview?file_id=${fileId}`
+
+    const response = await axios.get(url, {
+      responseType: 'blob',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : ''
+      }
+    })
+
+    const blob = new Blob([response.data], { type: response.data.type || 'application/octet-stream' })
+    return window.URL.createObjectURL(blob)
+  } catch (error) {
+    throw new Error('获取文件预览失败: ' + (error instanceof Error ? error.message : '未知错误'))
+  }
+}
+
+/**
+ * 获取文件下载 URL
+ * @param fileId 文件ID
+ * @returns 下载URL
+ */
+export const getFileDownloadUrl = (fileId: string): string => {
+  // 使用预览接口（预览和下载使用同一个接口）
+  return `${API_BASE_URL}/download/preview?file_id=${fileId}`
+}
+
+/**
+ * 获取文件缩略图 URL
+ * @param fileId 文件ID
+ * @returns 缩略图URL
+ */
+export const getThumbnailUrl = (fileId: string): string => {
+  return `${API_BASE_URL}${API_ENDPOINTS.FILE.THUMBNAIL}/${fileId}`
+}
+
+/**
+ * 获取文件文本内容
+ * @param fileId 文件ID
+ * @returns 文本内容
+ */
+export const getFileTextContent = async (fileId: string): Promise<string> => {
+  try {
+    const url = getFileDownloadUrl(fileId)
+    const token = cache.local.get('token')
+
+    const response = await axios.get(url, {
+      responseType: 'text',
+      headers: {
+        Authorization: token ? `Bearer ${token}` : ''
+      }
+    })
+
+    return response.data
+  } catch (error) {
+    throw new Error('获取文件内容失败')
+  }
+}
+
+/**
+ * 获取代码语言类型（用于代码高亮）
+ */
+export const getCodeLanguage = (fileName: string): string => {
+  const ext = fileName.split('.').pop()?.toLowerCase() || ''
+  const langMap: Record<string, string> = {
+    js: 'javascript',
+    ts: 'typescript',
+    jsx: 'javascript',
+    tsx: 'typescript',
+    vue: 'xml', // Vue 文件使用 XML 语法高亮（因为 highlight.js 没有专门的 vue 语言）
+    html: 'html',
+    css: 'css',
+    scss: 'scss',
+    less: 'less',
+    json: 'json',
+    xml: 'xml',
+    yaml: 'yaml',
+    yml: 'yaml',
+    py: 'python',
+    java: 'java',
+    cpp: 'cpp',
+    c: 'c',
+    go: 'go',
+    rs: 'rust',
+    php: 'php',
+    rb: 'ruby',
+    swift: 'swift',
+    sql: 'sql',
+    sh: 'bash',
+    bash: 'bash',
+    zsh: 'bash',
+    ps1: 'powershell'
+  }
+  return langMap[ext] || ext
+}
+
+/**
+ * 判断文件是否可预览
+ * @param file 文件对象
+ * @returns 是否可预览
+ */
+export const isPreviewable = (file: FileItem): boolean => {
+  const fileType = detectFileType(file)
+  return fileType !== 'unsupported'
+}

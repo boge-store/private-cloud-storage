@@ -1,0 +1,268 @@
+package response
+
+import "myobj/src/pkg/custom_type"
+
+// FileListResponse 文件列表响应结构体
+type FileListResponse struct {
+	// 面包屑路径
+	Breadcrumbs []Breadcrumb `json:"breadcrumbs"`
+	// 当前路径
+	CurrentPath string `json:"current_path"`
+	// 目录列表
+	Folders []*FolderItem `json:"folders"`
+	// 文件列表
+	Files []*FileItem `json:"files"`
+	// 总数（目录+文件）
+	Total int64 `json:"total"`
+	// 当前页
+	Page int `json:"page"`
+	// 每页数量
+	PageSize int `json:"page_size"`
+}
+
+// Breadcrumb 面包屑项
+type Breadcrumb struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
+// FolderItem 目录项
+type FolderItem struct {
+	ID          int                  `json:"id"`
+	Name        string               `json:"name"`
+	Path        string               `json:"path"`
+	CreatedTime custom_type.JsonTime `json:"created_time"`
+}
+
+// FileItem 文件项
+type FileItem struct {
+	FileID string `json:"file_id"`
+	//UfID         string               `json:"uf_id"` // 用户文件ID
+	FileName     string               `json:"file_name"`
+	FileSize     int64                `json:"file_size"`
+	MimeType     string               `json:"mime_type"`
+	Category     string               `json:"category"` // 文件分类
+	IsEnc        bool                 `json:"is_enc"`
+	HasThumbnail bool                 `json:"has_thumbnail"` // 是否有缩略图
+	Public       bool                 `json:"public"`        // 是否公开
+	CreatedAt    custom_type.JsonTime `json:"created_at"`
+}
+
+// FileDir 文件目录结构体
+type FileDir struct {
+	//路径ID
+	ID int `json:"id"`
+	// 路径
+	Path string `json:"path"`
+	// 子路径
+	Subpath []struct {
+		ID   int    `json:"id"`
+		Path string `json:"path"`
+	} `json:"subpath"`
+	// 父级路径id
+	ParentID string `json:"parent_id"`
+	// 文件夹创建时间
+	CreatedTime custom_type.JsonTime `json:"created_time"`
+}
+
+// FileInfoData 文件信息结构体
+type FileInfoData struct {
+	// 文件ID
+	FileID string `json:"file_id"`
+	// 文件名
+	FileName string `json:"file_name"`
+	// 文件大小
+	FileSize int64 `json:"file_size"`
+	// 文件hash
+	FileHash string `json:"file_hash"`
+	// 是否加密
+	IsEnc bool `json:"is_enc"`
+	// 文件类型
+	MimeType string `json:"mime_type"`
+	// 文件虚拟路径
+	VirtualPath string `json:"virtual_path"`
+	// 文件上传时间
+	CreatedAt string `json:"created_at"`
+	// 文件缩略图 base64
+	Thumbnail string `json:"thumbnail"`
+}
+
+// ShareListItem 分享列表项
+type ShareListItem struct {
+	ID            int                  `json:"id"`
+	UserID        string               `json:"user_id"`
+	FileID        string               `json:"file_id"`
+	FileName      string               `json:"file_name"` // 用户文件名
+	Token         string               `json:"token"`
+	ExpiresAt     custom_type.JsonTime `json:"expires_at"`
+	PasswordHash  string               `json:"-"` // 不暴露密码哈希到JSON响应
+	DownloadCount int                  `json:"download_count"`
+	CreatedAt     custom_type.JsonTime `json:"created_at"`
+}
+
+// FilePrecheckResponse 文件预检查响应结构体
+type FilePrecheckResponse struct {
+	PrecheckID string   `json:"precheck_id"`
+	Md5        []string `json:"md5"`
+}
+
+// UploadProgressResponse 上传进度响应结构体
+type UploadProgressResponse struct {
+	PrecheckID string   `json:"precheck_id"`
+	FileName   string   `json:"file_name"`
+	FileSize   int64    `json:"file_size"`
+	Uploaded   int      `json:"uploaded"`    // 已上传分片数
+	Total      int      `json:"total"`       // 总分片数
+	Progress   float64  `json:"progress"`    // 进度百分比 (0-100)
+	Md5        []string `json:"md5"`         // 已上传分片的MD5列表
+	IsComplete bool     `json:"is_complete"` // 是否已完成
+	Status     string   `json:"status"`      // 任务状态: uploading/merging/completed/failed
+}
+
+// VideoPlayTokenResponse 视频播放 Token 响应
+type VideoPlayTokenResponse struct {
+	// 播放 Token（24小时有效）
+	PlayToken string `json:"play_token"`
+	// 文件信息
+	FileInfo VideoFileInfo `json:"file_info"`
+}
+
+// VideoFileInfo 视频文件信息
+type VideoFileInfo struct {
+	// 文件ID
+	FileID string `json:"file_id"`
+	// 文件名
+	FileName string `json:"file_name"`
+	// 文件大小（字节）
+	FileSize int64 `json:"file_size"`
+	// 是否加密
+	IsEnc bool `json:"is_enc"`
+	// MIME 类型
+	MimeType string `json:"mime_type"`
+}
+
+// PublicFileItem 公开文件列表项
+type PublicFileItem struct {
+	// 用户文件ID
+	UfID string `json:"uf_id"`
+	// 文件名
+	FileName string `json:"file_name"`
+	// 文件大小
+	FileSize int64 `json:"file_size"`
+	// MIME 类型
+	MimeType string `json:"mime_type"`
+	// 所属用户名
+	OwnerName string `json:"owner_name"`
+	// 是否有缩略图
+	HasThumbnail bool `json:"has_thumbnail"`
+	// 创建时间
+	CreatedAt custom_type.JsonTime `json:"created_at"`
+}
+
+// PublicFileListResponse 公开文件列表响应
+type PublicFileListResponse struct {
+	// 文件列表
+	Files []PublicFileItem `json:"files"`
+	// 总数
+	Total int64 `json:"total"`
+	// 当前页
+	Page int `json:"page"`
+	// 每页数量
+	PageSize int `json:"page_size"`
+}
+
+// CategoryStat 分类统计项
+type CategoryStat struct {
+	// 分类名称
+	Category string `json:"category"`
+	// 文件数量
+	Count int64 `json:"count"`
+	// 总大小（字节）
+	TotalSize int64 `json:"total_size"`
+}
+
+// CategoryStatsResponse 分类统计响应
+type CategoryStatsResponse struct {
+	// 分类统计列表
+	Categories []CategoryStat `json:"categories"`
+	// 文件总数
+	TotalCount int64 `json:"total_count"`
+	// 总大小（字节）
+	TotalSize int64 `json:"total_size"`
+}
+
+// UploadTaskItem 上传任务列表项（不包含敏感信息）
+type UploadTaskItem struct {
+	// 任务ID（precheck_id）
+	ID string `json:"id"`
+	// 文件名
+	FileName string `json:"file_name"`
+	// 文件大小（字节）
+	FileSize int64 `json:"file_size"`
+	// 分片大小（字节）
+	ChunkSize int64 `json:"chunk_size"`
+	// 总分片数
+	TotalChunks int `json:"total_chunks"`
+	// 已上传分片数
+	UploadedChunks int `json:"uploaded_chunks"`
+	// 文件hash签名
+	ChunkSignature string `json:"chunk_signature"`
+	// 路径ID
+	PathID string `json:"path_id"`
+	// 任务状态（pending/uploading/completed/failed/aborted）
+	Status string `json:"status"`
+	// 错误信息
+	ErrorMessage string `json:"error_message"`
+	// 上传进度（0-100）
+	Progress float64 `json:"progress"`
+	// 创建时间
+	CreateTime custom_type.JsonTime `json:"create_time"`
+	// 更新时间
+	UpdateTime custom_type.JsonTime `json:"update_time"`
+	// 过期时间
+	ExpireTime custom_type.JsonTime `json:"expire_time"`
+}
+
+// UploadTaskListResponse 上传任务列表响应
+type UploadTaskListResponse struct {
+	// 任务列表
+	Tasks []UploadTaskItem `json:"tasks"`
+	// 总数
+	Total int64 `json:"total"`
+	// 当前页
+	Page int `json:"page"`
+	// 每页数量
+	PageSize int `json:"page_size"`
+}
+
+// ExtractCheckResponse 解压冲突检测响应
+type ExtractCheckResponse struct {
+	HasConflict   bool     `json:"has_conflict"`
+	ConflictFiles []string `json:"conflict_files"`
+	TotalFiles    int      `json:"total_files"`
+}
+
+// ExtractCreateResponse 解压缩任务创建响应
+type ExtractCreateResponse struct {
+	TaskID      string `json:"task_id"`
+	ArchiveName string `json:"archive_name"`
+	ArchiveType string `json:"archive_type"`
+	TotalFiles  int    `json:"total_files"`
+	TotalSize   int64  `json:"total_size"`
+	Status      string `json:"status"`
+}
+
+// ExtractProgressResponse 解压缩进度响应
+type ExtractProgressResponse struct {
+	TaskID       string `json:"task_id"`
+	Status       string `json:"status"`
+	Progress     int    `json:"progress"`
+	CurrentFile  string `json:"current_file"`
+	CurrentIndex int    `json:"current_index"`
+	TotalFiles   int    `json:"total_files"`
+	Completed    int    `json:"completed"`
+	Failed       int    `json:"failed"`
+	Skipped      int    `json:"skipped"`
+	ErrorMsg     string `json:"error_msg"`
+}
