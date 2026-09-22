@@ -100,7 +100,7 @@ CREATE TABLE `user_info` (
 CREATE TABLE `api_key` (
     `id` INT NOT NULL AUTO_INCREMENT COMMENT 'API密钥ID',
     `user_id` VARCHAR(64) NOT NULL COMMENT '用户ID',
-    `key` VARCHAR(255) NOT NULL COMMENT 'API密钥',
+    `key` VARCHAR(400) NOT NULL COMMENT 'API密钥',
     `expires_at` DATETIME DEFAULT NULL COMMENT '过期时间',
     `created_at` DATETIME NOT NULL COMMENT '创建时间',
     `private_key` TEXT NOT NULL COMMENT '私钥',
@@ -211,7 +211,7 @@ CREATE TABLE `upload_task` (
 -- 上传分片表
 CREATE TABLE `upload_chunk` (
     `chunk_id` VARCHAR(64) NOT NULL COMMENT '分片ID',
-    `user_id` VARCHAR(64) NOT NULL COMMENT '用户ID',
+    `user_id` VARCHAR(255) NOT NULL COMMENT '用户ID',
     `file_name` TEXT NOT NULL COMMENT '文件名',
     `file_size` BIGINT DEFAULT NULL COMMENT '文件大小',
     `md5` TEXT DEFAULT NULL COMMENT 'MD5',
@@ -259,7 +259,7 @@ CREATE TABLE `shares` (
     `id` INT NOT NULL AUTO_INCREMENT COMMENT '分享记录ID',
     `user_id` VARCHAR(64) NOT NULL COMMENT '用户ID',
     `file_id` VARCHAR(64) NOT NULL COMMENT '文件ID',
-    `token` VARCHAR(255) NOT NULL COMMENT '分享令牌',
+    `token` VARCHAR(400) NOT NULL COMMENT '分享令牌',
     `expires_at` DATETIME NOT NULL COMMENT '分享过期时间',
     `password_hash` VARCHAR(255) NOT NULL COMMENT '访问密码哈希',
     `download_count` INT NOT NULL DEFAULT 0 COMMENT '下载次数统计',

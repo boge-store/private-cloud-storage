@@ -260,24 +260,24 @@ func fileExists(path string) bool {
 // weakSecrets 弱密钥检测列表
 var weakSecrets = map[string]bool{
 	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": true,
-	"00000000000000000000000000000000":  true,
-	"11111111111111111111111111111111":  true,
-	"passwordpasswordpasswordpassword": true,
-	"secretsecretsecretsecretsecretsec": true,
-	"abcdefghijklmnopqrstuvwxyzabcdef": true,
-	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa": true,
-	"000000000000000000000000000000000": true,
-	"12345678901234567890123456789012": true,
-	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":  true,
-	"password":                          true,
-	"secret":                            true,
-	"12345678":                          true,
-	"qwerty":                            true,
-	"admin":                             true,
-	"default":                           true,
-	"test":                              true,
-	"your-secret-key-here-change-me":    true,
-	"change-me-to-a-real-secret":        true,
+	"00000000000000000000000000000000":   true,
+	"11111111111111111111111111111111":   true,
+	"passwordpasswordpasswordpassword":   true,
+	"secretsecretsecretsecretsecretsec":  true,
+	"abcdefghijklmnopqrstuvwxyzabcdef":   true,
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":  true,
+	"000000000000000000000000000000000":  true,
+	"12345678901234567890123456789012":   true,
+	"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa":   true,
+	"password":                           true,
+	"secret":                             true,
+	"12345678":                           true,
+	"qwerty":                             true,
+	"admin":                              true,
+	"default":                            true,
+	"test":                               true,
+	"your-secret-key-here-change-me":     true,
+	"change-me-to-a-real-secret":         true,
 }
 
 // validateConfig 验证配置的必要字段
@@ -399,7 +399,7 @@ func GetConfig() *MyObjConfig {
 // 环境变量命名规则: MYOBJ_<SECTION>_<FIELD> (例如: MYOBJ_SERVER_PORT, MYOBJ_DATABASE_HOST)
 func applyEnvOverrides(cfg *MyObjConfig) {
 	applyEnvOverridesRecursive(reflect.ValueOf(cfg).Elem(), "MYOBJ", "")
-	
+
 	// S3 加密主密钥特殊处理（保持向后兼容，支持 S3_ENCRYPTION_MASTER_KEY）
 	if val := getEnv("S3_ENCRYPTION_MASTER_KEY"); val != "" {
 		cfg.S3.EncryptionMasterKey = val
@@ -412,27 +412,27 @@ func applyEnvOverrides(cfg *MyObjConfig) {
 // sectionPrefix: 当前节的名称（如 "SERVER", "DATABASE"）
 func applyEnvOverridesRecursive(v reflect.Value, prefix, sectionPrefix string) {
 	t := v.Type()
-	
+
 	// 遍历结构体的所有字段
 	for i := 0; i < v.NumField(); i++ {
 		field := v.Field(i)
 		fieldType := t.Field(i)
-		
+
 		// 跳过未导出的字段
 		if !field.CanSet() {
 			continue
 		}
-		
+
 		// 获取 TOML tag
 		tomlTag := fieldType.Tag.Get("toml")
 		if tomlTag == "" || tomlTag == "-" {
 			continue
 		}
-		
+
 		// 构建环境变量名
 		// 将 toml tag 转换为大写，例如: "api_key" -> "API_KEY"
 		envKey := strings.ToUpper(tomlTag)
-		
+
 		// 如果是嵌套结构体，递归处理
 		if field.Kind() == reflect.Struct {
 			// 构建新的 section 前缀
@@ -445,7 +445,7 @@ func applyEnvOverridesRecursive(v reflect.Value, prefix, sectionPrefix string) {
 			applyEnvOverridesRecursive(field, prefix, newSectionPrefix)
 			continue
 		}
-		
+
 		// 构建完整的环境变量名: MYOBJ_<SECTION>_<FIELD>
 		var envVarName string
 		if sectionPrefix != "" {
@@ -453,7 +453,7 @@ func applyEnvOverridesRecursive(v reflect.Value, prefix, sectionPrefix string) {
 		} else {
 			envVarName = prefix + "_" + envKey
 		}
-		
+
 		// 根据字段类型设置值
 		setFieldFromEnv(field, envVarName)
 	}
@@ -465,21 +465,21 @@ func setFieldFromEnv(field reflect.Value, envVarName string) {
 	if envValue == "" {
 		return
 	}
-	
+
 	switch field.Kind() {
 	case reflect.String:
 		field.SetString(envValue)
-		
+
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if intVal, err := strconv.Atoi(envValue); err == nil {
 			field.SetInt(int64(intVal))
 		}
-		
+
 	case reflect.Bool:
 		if boolVal := parseBool(envValue); boolVal != nil {
 			field.SetBool(*boolVal)
 		}
-		
+
 	default:
 		// 其他类型暂不支持
 	}

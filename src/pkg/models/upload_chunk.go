@@ -3,7 +3,7 @@ package models
 // UploadChunk 上传分片信息
 type UploadChunk struct {
 	ChunkID  int    `json:"chunk_id" gorm:"primaryKey"`
-	UserID   string `json:"user_id"`
+	UserID   string `json:"user_id" gorm:"type:VARCHAR(255);not null"`
 	FileName string `json:"file_name"`
 	FileSize int64  `json:"file_size"`
 	Md5      string `json:"md5"`

@@ -46,7 +46,7 @@ func (l *GormSlogAdapter) Trace(ctx context.Context, begin time.Time, fc func() 
 
 	if err != nil {
 		slog.ErrorContext(ctx, "gorm trace",
-			"err", err,
+			"err", err.Error(),
 			"sql", sql,
 			"rows", rows,
 			"elapsed", elapsed)

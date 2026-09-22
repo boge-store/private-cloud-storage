@@ -8,7 +8,7 @@ import (
 type ApiKey struct {
 	ID          int                  `gorm:"type:INTEGER;not null;primaryKey;unique" json:"id"` // API密钥ID，主键且唯一
 	UserID      string               `gorm:"type:VARCHAR(255);not null" json:"user_id"`         // 用户ID
-	Key         string               `gorm:"type:TEXT;not null" json:"-"`                       // API密钥（不暴露在JSON响应中）
+	Key         string               `gorm:"type:VARCHAR(400);not null" json:"-"`               // API密钥（不暴露在JSON响应中）
 	ExpiresAt   custom_type.JsonTime `gorm:"type:DATETIME" json:"expires_at"`                   // 过期时间
 	CreatedAt   custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"created_at"`          // 创建时间
 	PrivateKey  string               `gorm:"type:text;not null" json:"-"`                       // 私钥（RSA，用于加密/解密）

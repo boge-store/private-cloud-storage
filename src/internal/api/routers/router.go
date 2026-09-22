@@ -170,7 +170,7 @@ func Execute(cacheLocal cache.Cache) {
 	}
 
 	// 初始化主服务器路由
-	router := initRouter(serverFactory, cacheLocal)
+	_router := initRouter(serverFactory, cacheLocal)
 
 	// 如果S3启用且使用独立端口，在后台启动S3服务器
 	if config.CONFIG.S3.Enable && !config.CONFIG.S3.SharePort {
@@ -183,7 +183,7 @@ func Execute(cacheLocal cache.Cache) {
 
 	// 启动主服务器
 	logger.LOG.Info("主服务器正在启动，按 Ctrl+C 停止...")
-	if err := router.Run(addr); err != nil {
+	if err := _router.Run(addr); err != nil {
 		logger.LOG.Error("主服务器启动失败", "error", err)
 		panic(fmt.Sprintf("HTTP主服务器启动失败: %v", err))
 	}
