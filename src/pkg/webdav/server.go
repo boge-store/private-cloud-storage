@@ -202,12 +202,15 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Stop() {
 	if s.lockSystem != nil {
 		if err := s.lockSystem.Close(); err != nil {
-			logger.LOG.Error("关闭 WebDAV Redis 连接失败", "error", err)
+			logger.LOG.Error("关闭 WebDAV Redis 连接失败", "error", err.Error())
 		}
+		s.lockSystem = nil
+		s.redis = nil
+		return
 	}
 	if s.redis != nil {
 		if err := s.redis.Close(); err != nil {
-			logger.LOG.Error("关闭 Redis 客户端失败", "error", err)
+			logger.LOG.Error("关闭 Redis 客户端失败", "error", err.Error())
 		}
 	}
 }

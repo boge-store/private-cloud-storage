@@ -8,7 +8,7 @@ type S3Bucket struct {
 	BucketName    string               `gorm:"uniqueIndex:idx_bucket_user;size:63;not null" json:"bucket_name"` // Bucket名称（符合S3命名规范）
 	UserID        string               `gorm:"uniqueIndex:idx_bucket_user;size:36;not null;index" json:"user_id"`
 	Region        string               `gorm:"size:32;default:'us-east-1'" json:"region"`
-	VirtualPathID int                  `gorm:"index;not null" json:"virtual_path_id"` // 关联到虚拟路径ID
+	VirtualPathID int                  `gorm:"index;not null" json:"virtual_path_id"`        // 关联到虚拟路径ID
 	Versioning    string               `gorm:"size:16;default:'Disabled'" json:"versioning"` // 版本控制状态：Enabled/Suspended/Disabled
 	CreatedAt     custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"created_at"`
 	UpdatedAt     custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"updated_at"`
@@ -20,21 +20,21 @@ func (S3Bucket) TableName() string {
 
 // S3ObjectMetadata S3对象元数据（扩展FileInfo）
 type S3ObjectMetadata struct {
-	ID           int                  `gorm:"primaryKey;autoIncrement" json:"id"`
-	FileID       string               `gorm:"size:36;index" json:"file_id"` // 关联FileInfo.ID（DeleteMarker时为空）
-	BucketName   string               `gorm:"index:idx_bucket_key;size:63;not null" json:"bucket_name"`
-	ObjectKey    string               `gorm:"index:idx_bucket_key;size:1024;not null" json:"object_key"` // S3对象键名
-	UserID       string               `gorm:"size:36;not null;index" json:"user_id"`
-	ETag         string               `gorm:"size:64" json:"etag"` // MD5或BLAKE3哈希（DeleteMarker时为空）
-	StorageClass string               `gorm:"size:32;default:'STANDARD'" json:"storage_class"`
-	ContentType  string               `gorm:"size:256" json:"content_type"`
-	UserMetadata string               `gorm:"type:text" json:"user_metadata"`  // JSON格式存储x-amz-meta-*
-	Tags         string               `gorm:"type:text" json:"tags"` // JSON格式存储对象标签
-	VersionID    string               `gorm:"index;size:36" json:"version_id"` // 版本控制ID
-	IsLatest     bool                 `gorm:"default:true;index" json:"is_latest"`
-	IsDeleteMarker bool               `gorm:"default:false;index" json:"is_delete_marker"` // 是否为删除标记
-	CreatedAt    custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"created_at"`
-	UpdatedAt    custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"updated_at"`
+	ID             int                  `gorm:"primaryKey;autoIncrement" json:"id"`
+	FileID         string               `gorm:"size:36;index" json:"file_id"` // 关联FileInfo.ID（DeleteMarker时为空）
+	BucketName     string               `gorm:"index:idx_bucket_key;size:63;not null" json:"bucket_name"`
+	ObjectKey      string               `gorm:"index:idx_bucket_key;size:1024;not null" json:"object_key"` // S3对象键名
+	UserID         string               `gorm:"size:36;not null;index" json:"user_id"`
+	ETag           string               `gorm:"size:64" json:"etag"` // MD5或BLAKE3哈希（DeleteMarker时为空）
+	StorageClass   string               `gorm:"size:32;default:'STANDARD'" json:"storage_class"`
+	ContentType    string               `gorm:"size:256" json:"content_type"`
+	UserMetadata   string               `gorm:"type:text" json:"user_metadata"`  // JSON格式存储x-amz-meta-*
+	Tags           string               `gorm:"type:text" json:"tags"`           // JSON格式存储对象标签
+	VersionID      string               `gorm:"index;size:36" json:"version_id"` // 版本控制ID
+	IsLatest       bool                 `gorm:"default:true;index" json:"is_latest"`
+	IsDeleteMarker bool                 `gorm:"default:false;index" json:"is_delete_marker"` // 是否为删除标记
+	CreatedAt      custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"created_at"`
+	UpdatedAt      custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"updated_at"`
 }
 
 func (S3ObjectMetadata) TableName() string {
@@ -45,7 +45,7 @@ func (S3ObjectMetadata) TableName() string {
 type S3MultipartUpload struct {
 	UploadID   string               `gorm:"primaryKey;size:64" json:"upload_id"`
 	BucketName string               `gorm:"index;size:63;not null" json:"bucket_name"`
-	ObjectKey  string               `gorm:"index;size:1024;not null" json:"object_key"`
+	ObjectKey  string               `gorm:"index,length:255;size:1024;not null" json:"object_key"`
 	UserID     string               `gorm:"index;size:36;not null" json:"user_id"`
 	Metadata   string               `gorm:"type:text" json:"metadata"`                   // JSON格式元数据
 	Status     string               `gorm:"size:32;default:'in-progress'" json:"status"` // in-progress/completed/aborted
@@ -148,8 +148,8 @@ func (S3BucketLifecycle) TableName() string {
 type S3EncryptionKey struct {
 	ID        int                  `gorm:"primaryKey;autoIncrement" json:"id"`
 	KeyID     string               `gorm:"uniqueIndex:idx_key_id;size:64;not null" json:"key_id"` // 密钥ID（用于标识）
-	KeyData   string               `gorm:"type:text;not null" json:"-"`                          // 加密后的密钥数据（base64）
-	Algorithm string               `gorm:"size:32;default:'AES256'" json:"algorithm"`            // 加密算法（AES256等）
+	KeyData   string               `gorm:"type:text;not null" json:"-"`                           // 加密后的密钥数据（base64）
+	Algorithm string               `gorm:"size:32;default:'AES256'" json:"algorithm"`             // 加密算法（AES256等）
 	CreatedAt custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"created_at"`
 	UpdatedAt custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"updated_at"`
 }
@@ -160,18 +160,18 @@ func (S3EncryptionKey) TableName() string {
 
 // S3ObjectEncryption 对象加密元数据
 type S3ObjectEncryption struct {
-	ID              int                  `gorm:"primaryKey;autoIncrement" json:"id"`
-	BucketName      string               `gorm:"index:idx_bucket_key;size:63;not null" json:"bucket_name"`
-	ObjectKey       string               `gorm:"index:idx_bucket_key;size:1024;not null" json:"object_key"`
-	VersionID       string               `gorm:"index:idx_bucket_key;size:36" json:"version_id"` // 版本ID（支持版本控制）
-	UserID          string               `gorm:"index;size:36;not null" json:"user_id"`
-	EncryptionType  string               `gorm:"size:32;not null" json:"encryption_type"` // SSE-S3, SSE-C, SSE-KMS
-	Algorithm       string               `gorm:"size:32;default:'AES256'" json:"algorithm"` // AES256等
-	KeyID           string               `gorm:"size:64" json:"key_id"`                    // 密钥ID（SSE-S3或SSE-KMS）
-	EncryptedKey    string               `gorm:"type:text" json:"encrypted_key"`            // 加密的密钥（SSE-C时使用）
-	IV              string               `gorm:"size:64" json:"iv"`                        // 初始化向量（base64）
-	CreatedAt       custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"created_at"`
-	UpdatedAt       custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"updated_at"`
+	ID             int                  `gorm:"primaryKey;autoIncrement" json:"id"`
+	BucketName     string               `gorm:"index:idx_bucket_key;size:63;not null" json:"bucket_name"`
+	ObjectKey      string               `gorm:"index:idx_bucket_key;size:1024;not null" json:"object_key"`
+	VersionID      string               `gorm:"index:idx_bucket_key;size:36" json:"version_id"` // 版本ID（支持版本控制）
+	UserID         string               `gorm:"index;size:36;not null" json:"user_id"`
+	EncryptionType string               `gorm:"size:32;not null" json:"encryption_type"`   // SSE-S3, SSE-C, SSE-KMS
+	Algorithm      string               `gorm:"size:32;default:'AES256'" json:"algorithm"` // AES256等
+	KeyID          string               `gorm:"size:64" json:"key_id"`                     // 密钥ID（SSE-S3或SSE-KMS）
+	EncryptedKey   string               `gorm:"type:text" json:"encrypted_key"`            // 加密的密钥（SSE-C时使用）
+	IV             string               `gorm:"size:64" json:"iv"`                         // 初始化向量（base64）
+	CreatedAt      custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"created_at"`
+	UpdatedAt      custom_type.JsonTime `gorm:"type:DATETIME;not null" json:"updated_at"`
 }
 
 func (S3ObjectEncryption) TableName() string {
