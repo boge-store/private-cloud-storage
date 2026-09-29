@@ -32,7 +32,7 @@ func (r *apiKeyRepository) GetByID(ctx context.Context, id int) (*models.ApiKey,
 
 func (r *apiKeyRepository) GetByKey(ctx context.Context, key string) (*models.ApiKey, error) {
 	var apiKey models.ApiKey
-	err := r.db.WithContext(ctx).Where("key = ?", key).First(&apiKey).Error
+	err := r.db.WithContext(ctx).Where("`key` = ?", key).First(&apiKey).Error
 	if err != nil {
 		return nil, err
 	}
