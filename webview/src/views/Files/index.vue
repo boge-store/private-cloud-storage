@@ -119,8 +119,8 @@
     </div>
 
     <!-- 新建文件夹对话框 -->
-    <el-dialog v-model="showNewFolderDialog" :title="t('files.newFolder')" width="500px" @close="handleDialogClose">
-      <el-form ref="folderFormRef" :model="folderForm" :rules="folderRules" label-width="100px">
+    <el-dialog v-model="showNewFolderDialog" :title="t('files.newFolder')" width="510px" @close="handleDialogClose">
+      <el-form ref="folderFormRef" :model="folderForm" :rules="folderRules" label-width="146px">
         <el-form-item :label="t('files.folderName')" prop="dir_path">
           <el-input
             v-model="folderForm.dir_path"
@@ -130,6 +130,9 @@
             show-word-limit
             @keyup.enter="handleCreateFolder"
           />
+        </el-form-item>
+        <el-form-item :label="t('files.buildS3Bucket')" prop="build_s3_bucket">
+          <el-switch v-model="folderForm.build_s3_bucket" />
         </el-form-item>
       </el-form>
 

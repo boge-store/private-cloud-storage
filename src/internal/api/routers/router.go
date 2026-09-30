@@ -33,7 +33,7 @@ type Handler interface {
 
 // initRouter 初始化路由
 // 创建Gin引擎并配置中间件和路由
-func initRouter(factory *service.ServerFactory, cache cache.Cache) *gin.Engine {
+func initRouter(factory *service.ServerFactory, cache cache.Cache, bucketService *s3Service.S3BucketService) *gin.Engine {
 	logger.LOG.Info("[路由] 开始初始化路由...")
 	if config.CONFIG.Log.Level == "debug" {
 		gin.SetMode(gin.DebugMode)
@@ -76,7 +76,7 @@ func initRouter(factory *service.ServerFactory, cache cache.Cache) *gin.Engine {
 	{
 		// 用户相关路由
 		handlers.NewUserHandler(factory.UserService(), cache).Router(api)
-		handlers.NewFileHandler(factory.FileService(), factory.FileCategoryService(), factory.ThumbnailService(), cache).Router(api)
+		handlers.NewFileHandler(factory.FileService(), factory.FileCategoryService(), factory.ThumbnailService(), cache, bucketService).Router(api)
 		handlers.NewFileCategoryHandler(factory.FileCategoryService(), cache).Router(api)
 		handlers.NewSharesHandler(factory.ShareService(), cache).Router(api)
 		handlers.NewDownloadHandler(factory.DownloadService(), cache).Router(api)
@@ -144,6 +144,7 @@ func Execute(cacheLocal cache.Cache) {
 
 	factory := impl.NewRepositoryFactory(database.GetDB())
 	serverFactory := service.NewServiceFactory(factory, cacheLocal)
+	bucketService := s3Service.NewS3BucketService(factory)
 	// 启动回收站定时清理任务
 	recycledTask := task.NewRecycledTask(factory)
 	recycledTask.StartScheduledCleanup(30, 24*time.Hour)
@@ -170,7 +171,7 @@ func Execute(cacheLocal cache.Cache) {
 	}
 
 	// 初始化主服务器路由
-	_router := initRouter(serverFactory, cacheLocal)
+	_router := initRouter(serverFactory, cacheLocal, bucketService)
 
 	// 如果S3启用且使用独立端口，在后台启动S3服务器
 	if config.CONFIG.S3.Enable && !config.CONFIG.S3.SharePort {

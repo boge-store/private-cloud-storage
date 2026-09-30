@@ -46,6 +46,8 @@ type MakeDirRequest struct {
 	ParentLevel string `json:"parent_level"`
 	// 新文件夹路径
 	DirPath string `json:"dir_path"`
+	// 是否同步构建S3 Bucket
+	BuildS3Bucket bool `json:"build_s3_bucket"`
 }
 
 // MoveFileRequest 移动文件请求

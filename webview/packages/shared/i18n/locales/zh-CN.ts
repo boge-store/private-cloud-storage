@@ -192,6 +192,7 @@ export default {
     emptyFolder: '文件夹为空',
     noSearchResults: '未找到相关文件',
     folderName: '文件夹名称',
+    buildS3Bucket: '同步构建S3Bucket',
     folderNamePlaceholder: '请输入文件夹名称',
     fileName: '文件名称',
     fileNamePlaceholder: '请输入文件名称',

@@ -10,7 +10,8 @@ export function useFolderOperations(currentPath: Ref<string>, loadFileList: () =
   const creating = ref(false)
   const folderFormRef = ref<FormInstance>()
   const folderForm = reactive({
-    dir_path: ''
+    dir_path: '',
+    build_s3_bucket: false
   })
 
   const folderRules: FormRules = {
@@ -43,7 +44,8 @@ export function useFolderOperations(currentPath: Ref<string>, loadFileList: () =
         try {
           const res = await createFolder({
             parent_level: currentPath.value,
-            dir_path: folderForm.dir_path
+            dir_path: folderForm.dir_path,
+            build_s3_bucket: folderForm.build_s3_bucket
           })
 
           if (res.code === 200) {

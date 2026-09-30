@@ -6,6 +6,7 @@ import type { ApiResponse } from '@myobj/shared'
 export interface CreateFolderRequest {
   parent_level: string
   dir_path: string
+  build_s3_bucket: boolean
 }
 
 /**

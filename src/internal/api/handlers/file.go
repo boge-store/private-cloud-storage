@@ -9,6 +9,7 @@ import (
 	"myobj/src/pkg/cache"
 	"myobj/src/pkg/logger"
 	"myobj/src/pkg/models"
+	s3Service "myobj/src/s3_server/service"
 	"path/filepath"
 
 	"github.com/gin-gonic/gin"
@@ -17,14 +18,22 @@ import (
 
 type FileHandler struct {
 	service          *service.FileService
+	bucketService    *s3Service.S3BucketService
 	categoryService  *service.FileCategoryService
 	thumbnailService *service.ThumbnailService
 	cache            cache.Cache
 }
 
-func NewFileHandler(service *service.FileService, categoryService *service.FileCategoryService, thumbnailService *service.ThumbnailService, cacheLocal cache.Cache) *FileHandler {
+func NewFileHandler(
+	service *service.FileService,
+	categoryService *service.FileCategoryService,
+	thumbnailService *service.ThumbnailService,
+	cacheLocal cache.Cache,
+	bucketService *s3Service.S3BucketService,
+) *FileHandler {
 	return &FileHandler{
 		service:          service,
+		bucketService:    bucketService,
 		categoryService:  categoryService,
 		thumbnailService: thumbnailService,
 		cache:            cacheLocal,
@@ -306,6 +315,31 @@ func (f *FileHandler) MakeDir(c *gin.Context) {
 		return
 	}
 	userID := c.GetString("userID")
+
+	if req.BuildS3Bucket {
+		bucketName := req.DirPath
+		// S3 Bucket 流程
+		err := f.bucketService.CreateBucket(
+			c.Request.Context(),
+			bucketName,
+			userID,
+			"us-east-1",
+		)
+		if err != nil {
+			logger.LOG.Error("Create bucket failed",
+				"bucket_name", bucketName,
+				"user_id", userID,
+				"error", err.Error(),
+			)
+			// 错误
+			c.JSON(200, models.NewJsonResponse(500, "创建目录失败", err.Error()))
+			return
+		}
+		// 返回 Bucket 创建成功
+		c.JSON(200, models.NewJsonResponse(200, "创建目录成功", nil))
+		return
+	}
+
 	makeDir, err := f.service.MakeDir(req, userID)
 	if err != nil {
 		c.JSON(200, models.NewJsonResponse(500, "创建目录失败", err.Error()))

@@ -140,7 +140,7 @@ func (s *S3BucketService) CreateBucket(ctx context.Context, bucketName, userID, 
 		// 在根目录下创建bucket对应的虚拟目录
 		virtualPath := &models.VirtualPath{
 			UserID:      userID,
-			Path:        "/" + bucketName,
+			Path:        bucketName,
 			ParentLevel: fmt.Sprintf("%d", rootPath.ID),
 			IsDir:       true,
 			CreatedTime: custom_type.Now(),
