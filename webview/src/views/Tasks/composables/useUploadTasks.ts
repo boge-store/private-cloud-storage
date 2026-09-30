@@ -23,6 +23,8 @@ export function useUploadTasks() {
   // 防抖相关
   let syncTimer: number | null = null
   let lastSyncTime = 0
+  let syncPromise: Promise<void> | null = null
+  let syncingFromBackend = false
   const SYNC_DEBOUNCE_TIME = 2000 // 2秒内最多同步一次
 
   // 更新分页数据
@@ -43,8 +45,18 @@ export function useUploadTasks() {
       allUploadTasks.value = localTasks
       updatePaginatedTasks()
 
+      // 后端同步会逐条更新任务并触发订阅回调。同步期间只更新本地列表，
+      // 不再由这些内部通知重新排队后端同步。
+      if (syncingFromBackend) {
+        return
+      }
+
       // 防抖：如果不是强制同步，且距离上次同步时间小于防抖时间，则跳过后端同步
       const now = Date.now()
+      if (forceSync && syncTimer) {
+        clearTimeout(syncTimer)
+        syncTimer = null
+      }
       if (!forceSync && now - lastSyncTime < SYNC_DEBOUNCE_TIME) {
         // 取消之前的定时器
         if (syncTimer) {
@@ -52,6 +64,7 @@ export function useUploadTasks() {
         }
         // 设置新的定时器，延迟执行同步
         syncTimer = window.setTimeout(async () => {
+          syncTimer = null
           await syncTasksFromBackend()
           lastSyncTime = Date.now()
         }, SYNC_DEBOUNCE_TIME)
@@ -72,72 +85,100 @@ export function useUploadTasks() {
 
   // 从后端同步任务（包括所有状态的任务）
   const syncTasksFromBackend = async () => {
-    try {
-      // 获取所有任务列表（包括已完成和未完成的任务）
-      // 使用较大的分页大小，获取所有任务
-      const pageSize = 100
-      let currentPage = 1
-      let hasMore = true
-      const allBackendTasks: any[] = []
+    // 同一 composable 实例只允许一个后端同步请求链路进行，避免
+    // 初始同步、任务订阅和定时同步同时触发重复请求。
+    if (syncPromise) {
+      return syncPromise
+    }
 
-      while (hasMore) {
-        try {
-          const response = await getUploadTaskList({
-            page: currentPage,
-            pageSize: pageSize
-          })
+    const currentSync = (async () => {
+      try {
+        // 获取所有任务列表（包括已完成和未完成的任务）
+        // 使用较大的分页大小，获取所有任务
+        const pageSize = 100
+        let currentPage = 1
+        let hasMore = true
+        const allBackendTasks: any[] = []
 
-          if (response.code === 200 && response.data) {
-            const { tasks, total } = response.data
-            if (tasks && Array.isArray(tasks)) {
-              allBackendTasks.push(...tasks)
-              
-              // 检查是否还有更多数据
-              if (allBackendTasks.length >= total || tasks.length < pageSize) {
-                hasMore = false
+        while (hasMore) {
+          try {
+            const response = await getUploadTaskList({
+              page: currentPage,
+              pageSize: pageSize
+            })
+
+            if (response.code === 200 && response.data) {
+              const { tasks, total } = response.data
+              if (tasks && Array.isArray(tasks)) {
+                allBackendTasks.push(...tasks)
+
+                // 检查是否还有更多数据
+                if (allBackendTasks.length >= total || tasks.length < pageSize) {
+                  hasMore = false
+                } else {
+                  currentPage++
+                }
               } else {
-                currentPage++
+                hasMore = false
               }
             } else {
               hasMore = false
             }
-          } else {
+          } catch (error: any) {
+            proxy?.$log.warn('获取任务列表失败:', error)
             hasMore = false
           }
-        } catch (error: any) {
-          proxy?.$log.warn('获取任务列表失败:', error)
-          hasMore = false
         }
+
+        // 将后端的所有任务同步到前端（包括已完成和未完成的任务）
+        if (allBackendTasks.length > 0) {
+          // 使用现有的同步函数，但需要适配新的数据结构
+          const backendTasks = allBackendTasks.map(task => ({
+            id: task.id,
+            file_name: task.file_name,
+            file_size: task.file_size,
+            chunk_size: task.chunk_size,
+            total_chunks: task.total_chunks,
+            uploaded_chunks: task.uploaded_chunks,
+            progress: task.progress || 0,
+            status: task.status,
+            error_message: task.error_message,
+            path_id: task.path_id,
+            create_time: task.create_time,
+            update_time: task.update_time,
+            expire_time: task.expire_time
+          }))
+
+          syncingFromBackend = true
+          try {
+            syncBackendTasksToFrontend(backendTasks)
+          } finally {
+            syncingFromBackend = false
+          }
+        }
+
+        // 更新前端任务列表
+        const allTasks = uploadTaskManager.getAllTasks()
+        allUploadTasks.value = allTasks
+        updatePaginatedTasks()
+      } catch (error: any) {
+        proxy?.$log.error('同步任务失败:', error)
       }
+    })()
 
-      // 将后端的所有任务同步到前端（包括已完成和未完成的任务）
-      if (allBackendTasks.length > 0) {
-        // 使用现有的同步函数，但需要适配新的数据结构
-        const backendTasks = allBackendTasks.map(task => ({
-          id: task.id,
-          file_name: task.file_name,
-          file_size: task.file_size,
-          chunk_size: task.chunk_size,
-          total_chunks: task.total_chunks,
-          uploaded_chunks: task.uploaded_chunks,
-          progress: task.progress || 0,
-          status: task.status,
-          error_message: task.error_message,
-          path_id: task.path_id,
-          create_time: task.create_time,
-          update_time: task.update_time,
-          expire_time: task.expire_time
-        }))
-
-        syncBackendTasksToFrontend(backendTasks)
+    syncPromise = currentSync
+    try {
+      await currentSync
+    } finally {
+      if (syncPromise === currentSync) {
+        syncPromise = null
       }
-
-      // 更新前端任务列表
-      const allTasks = uploadTaskManager.getAllTasks()
-      allUploadTasks.value = allTasks
-      updatePaginatedTasks()
-    } catch (error: any) {
-      proxy?.$log.error('同步任务失败:', error)
+      // 同步期间订阅回调可能已经安排了防抖任务；当前同步已覆盖它，
+      // 避免同步结束后再立即发起一次重复请求。
+      if (syncTimer) {
+        clearTimeout(syncTimer)
+        syncTimer = null
+      }
     }
   }
 
@@ -368,24 +409,30 @@ export function useUploadTasks() {
       }
 
       // 统计不同状态的任务数量
-      const uploadingTasks = allTasks.filter(t => t.status === 'uploading' || t.status === 'prechecking' || t.status === 'pending')
+      const uploadingTasks = allTasks.filter(
+        t => t.status === 'uploading' || t.status === 'prechecking' || t.status === 'pending'
+      )
       const otherTasks = allTasks.filter(t => !['uploading', 'prechecking', 'pending'].includes(t.status))
 
       let confirmMessage = ''
       if (uploadingTasks.length > 0 && otherTasks.length > 0) {
-        confirmMessage = t('tasks.confirmClearAllWithUploading', {
-          total: allTasks.length,
-          uploading: uploadingTasks.length,
-          other: otherTasks.length
-        }) || `确认清空所有上传任务？\n共有 ${allTasks.length} 个任务，其中 ${uploadingTasks.length} 个正在上传/预检中，${otherTasks.length} 个已完成/失败/已取消。\n正在上传的任务将被取消。`
+        confirmMessage =
+          t('tasks.confirmClearAllWithUploading', {
+            total: allTasks.length,
+            uploading: uploadingTasks.length,
+            other: otherTasks.length
+          }) ||
+          `确认清空所有上传任务？\n共有 ${allTasks.length} 个任务，其中 ${uploadingTasks.length} 个正在上传/预检中，${otherTasks.length} 个已完成/失败/已取消。\n正在上传的任务将被取消。`
       } else if (uploadingTasks.length > 0) {
-        confirmMessage = t('tasks.confirmClearAllUploading', {
-          count: uploadingTasks.length
-        }) || `确认清空所有上传任务？\n共有 ${uploadingTasks.length} 个正在上传/预检中的任务，清空将取消这些任务。`
+        confirmMessage =
+          t('tasks.confirmClearAllUploading', {
+            count: uploadingTasks.length
+          }) || `确认清空所有上传任务？\n共有 ${uploadingTasks.length} 个正在上传/预检中的任务，清空将取消这些任务。`
       } else {
-        confirmMessage = t('tasks.confirmClearAll', {
-          count: otherTasks.length
-        }) || `确认清空所有上传任务？\n共有 ${otherTasks.length} 个已完成/失败/已取消的任务将被清空。`
+        confirmMessage =
+          t('tasks.confirmClearAll', {
+            count: otherTasks.length
+          }) || `确认清空所有上传任务？\n共有 ${otherTasks.length} 个已完成/失败/已取消的任务将被清空。`
       }
 
       await proxy?.$modal.confirm(confirmMessage)
